@@ -19,20 +19,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
-            steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: "${GIT_REPO}"
-                    ]],
-                    extensions: [
-                        [$class: 'CloneOption', shallow: true, depth: 1, timeout: 20]
-                    ]
-                ])
-            }
-        }
-
         stage('Build & Test') {
             steps {
                 sh 'mvn clean install -DskipTests'
@@ -85,7 +71,7 @@ pipeline {
                 )]) {
                     sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    docker push busapooja/terraform-devops-project:latest
+                    docker push ${DOCKER_IMAGE}
                     '''
                 }
             }
