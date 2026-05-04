@@ -21,8 +21,15 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: "${GIT_REPO}"
-                shallow: true  
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: "${GIT_REPO}"
+                    ]],
+                    extensions: [
+                        [$class: 'CloneOption', shallow: true, depth: 1, timeout: 20]
+                    ]
+                ])
             }
         }
 
@@ -100,6 +107,9 @@ pipeline {
         }
         failure {
             echo "❌ PIPELINE FAILED - ${PROJECT_NAME}"
+        }
+        always {
+            echo "✔ Pipeline execution completed"
         }
     }
 }
