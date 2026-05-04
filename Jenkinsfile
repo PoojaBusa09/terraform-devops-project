@@ -22,6 +22,7 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 git branch: 'main', url: "${GIT_REPO}"
+                shallow: true  
             }
         }
 
