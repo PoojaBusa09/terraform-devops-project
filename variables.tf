@@ -7,5 +7,5 @@ variable "vm_cpus" {
 }
 
 variable "vm_memory" {
-  default = "1024 mib"
+  default = 1024
 }

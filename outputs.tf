@@ -1,3 +1,3 @@
-output "vm_name" {
-  value = virtualbox_vm.vm.name
+output "file_created" {
+  value = local_file.vm_file.filename
 }

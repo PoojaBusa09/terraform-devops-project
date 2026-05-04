@@ -1,10 +1,4 @@
-resource "virtualbox_vm" "vm" {
-  name   = var.vm_name
-  image  = "https://app.vagrantup.com/ubuntu/boxes/focal64/versions/20230807.0.0/providers/virtualbox.box"
-  cpus   = var.vm_cpus
-  memory = var.vm_memory
-
-  network_adapter {
-    type = "nat"
-  }
+resource "local_file" "vm_file" {
+  filename = "${path.module}/vm-info.txt"
+  content  = "Terraform VM Project is working successfully in Ubuntu VM\n"
 }

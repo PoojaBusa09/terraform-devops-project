@@ -1,10 +1,10 @@
 terraform {
   required_providers {
-    virtualbox = {
-      source  = "terra-farm/virtualbox"
-      version = "0.2.2"
+    local = {
+      source  = "hashicorp/local"
+      version = "2.5.1"
     }
   }
 }
 
-provider "virtualbox" {}
+provider "local" {}
