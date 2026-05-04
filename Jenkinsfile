@@ -2,11 +2,19 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_HUB = 'busapooja'
-        IMAGE_NAME = 'devopsprojects'
-        IMAGE_TAG = 'latest'
-        FULL_IMAGE = "busapooja/devopsprojects:latest"
-        GIT_REPO = 'https://github.com/PoojaBusa09/terraform-devops-project.git'
+        PROJECT_NAME = "terraform-devops-project"
+
+        GIT_REPO = "https://github.com/PoojaBusa09/terraform-devops-project.git"
+
+        DOCKER_IMAGE = "busapooja/terraform-devops-project:latest"
+
+        SONAR_PROJECT_KEY = "terraform-devops-project"
+        SONAR_PROJECT_NAME = "terraform-devops-project"
+        SONAR_HOST_URL = "http://192.168.0.50:9000"
+    }
+
+    tools {
+        maven 'Maven3'
     }
 
     stages {
@@ -17,29 +25,61 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Build & Test') {
             steps {
-                sh "docker build -t $FULL_IMAGE ."
+                sh 'mvn clean install -DskipTests'
             }
         }
 
-        stage('Docker Login') {
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                        sh """
+                        mvn sonar:sonar \
+                        -Dsonar.projectKey=${SONAR_PROJECT_KEY} \
+                        -Dsonar.projectName=${SONAR_PROJECT_NAME} \
+                        -Dsonar.host.url=${SONAR_HOST_URL} \
+                        -Dsonar.login=${SONAR_TOKEN}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 10, unit: 'MINUTES') {
+                    script {
+                        def qg = waitForQualityGate()
+                        if (qg.status != 'OK') {
+                            error "❌ Quality Gate Failed: ${qg.status}"
+                        } else {
+                            echo "✔ Quality Gate Passed"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE} ."
+            }
+        }
+
+        stage('Docker Login & Push') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'docker-hub-creds',
+                    credentialsId: 'docker-hub-cred',
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker push busapooja/terraform-devops-project:latest
                     '''
                 }
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                sh "docker push $FULL_IMAGE"
             }
         }
 
@@ -55,10 +95,10 @@ pipeline {
 
     post {
         success {
-            echo "🚀 Pipeline Success"
+            echo "🚀 PIPELINE SUCCESS - ${PROJECT_NAME}"
         }
         failure {
-            echo "❌ Pipeline Failed"
+            echo "❌ PIPELINE FAILED - ${PROJECT_NAME}"
         }
     }
 }
