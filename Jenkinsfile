@@ -3,9 +3,7 @@ pipeline {
 
     environment {
         PROJECT_NAME = "terraform-devops-project"
-
         GIT_REPO = "https://github.com/PoojaBusa09/terraform-devops-project.git"
-
         DOCKER_IMAGE = "busapooja/terraform-devops-project:latest"
 
         SONAR_PROJECT_KEY = "terraform-devops-project"
@@ -18,6 +16,21 @@ pipeline {
     }
 
     stages {
+
+        stage('Checkout Code') {
+            steps {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[url: "${GIT_REPO}"]],
+                    extensions: [[
+                        $class: 'CloneOption',
+                        shallow: true,
+                        depth: 1,
+                        timeout: 60
+                    ]]
+                ])
+            }
+        }
 
         stage('Build & Test') {
             steps {
@@ -69,10 +82,10 @@ pipeline {
                     usernameVariable: 'DOCKER_USER',
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh '''
+                    sh """
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
                     docker push ${DOCKER_IMAGE}
-                    '''
+                    """
                 }
             }
         }
@@ -89,10 +102,10 @@ pipeline {
 
     post {
         success {
-            echo "🚀 PIPELINE SUCCESS - ${PROJECT_NAME}"
+            echo "🚀 PIPELINE SUCCESS - ${env.PROJECT_NAME}"
         }
         failure {
-            echo "❌ PIPELINE FAILED - ${PROJECT_NAME}"
+            echo "❌ PIPELINE FAILED - ${env.PROJECT_NAME}"
         }
         always {
             echo "✔ Pipeline execution completed"
