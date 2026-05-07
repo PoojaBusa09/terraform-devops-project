@@ -12,18 +12,13 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
+      stage('Checkout') {
     steps {
-        checkout([$class: 'GitSCM',
-            branches: [[name: 'main']],
-            userRemoteConfigs: [[
-                url: 'https://github.com/PoojaBusa09/terraform-devops-project.git'
-            ]],
-            extensions: [[$class: 'CloneOption', depth: 1, shallow: true]]
-        ])
+        git branch: 'main',
+        url: 'https://github.com/PoojaBusa09/terraform-devops-project.git',
+        credentialsId: 'github-creds'
     }
 }
-
         stage('Build & Test') {
             steps {
                 sh 'mvn clean install -DskipTests'
