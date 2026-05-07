@@ -13,11 +13,16 @@ pipeline {
     stages {
 
         stage('Checkout') {
-            steps {
-                git branch: 'main',
+    steps {
+        checkout([$class: 'GitSCM',
+            branches: [[name: 'main']],
+            userRemoteConfigs: [[
                 url: 'https://github.com/PoojaBusa09/terraform-devops-project.git'
-            }
-        }
+            ]],
+            extensions: [[$class: 'CloneOption', depth: 1, shallow: true]]
+        ])
+    }
+}
 
         stage('Build & Test') {
             steps {
