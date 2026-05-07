@@ -46,10 +46,16 @@ pipeline {
 
         stage('Docker Push') {
             steps {
-                sh """
-                docker login -u $DOCKER_USER -p $DOCKER_PASS
-                docker push ${DOCKER_IMAGE}
-                """
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-cred',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker push ${DOCKER_IMAGE}
+                    '''
+                }
             }
         }
 
@@ -60,6 +66,15 @@ pipeline {
                 kubectl apply -f k8s/service.yml
                 '''
             }
+        }
+    }
+
+    post {
+        success {
+            echo "🚀 PIPELINE SUCCESS"
+        }
+        failure {
+            echo "❌ PIPELINE FAILED"
         }
     }
 }
