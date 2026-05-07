@@ -1,8 +1,13 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven3'
+    }
+
     environment {
-        DOCKER_IMAGE = "busapooja/terraform-devops-project:latest"
+        PROJECT_NAME = "terraform-devops-project"
+        DOCKER_IMAGE = "busapooja/terraform-devops-project:${BUILD_NUMBER}"
     }
 
     stages {
@@ -11,6 +16,34 @@ pipeline {
             steps {
                 git branch: 'main',
                 url: 'https://github.com/PoojaBusa09/terraform-devops-project.git'
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${DOCKER_IMAGE} ."
+            }
+        }
+
+        stage('Docker Login & Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'docker-hub-cred',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+
+                    sh """
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                    docker push ${DOCKER_IMAGE}
+                    """
+                }
             }
         }
 
@@ -38,43 +71,27 @@ pipeline {
             }
         }
 
-        stage('Docker Build') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh "docker build -t ${DOCKER_IMAGE} ."
-            }
-        }
-
-        stage('Docker Push') {
-            steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'docker-hub-cred',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    docker push ${DOCKER_IMAGE}
-                    '''
-                }
-            }
-        }
-
-        stage('Kubernetes Deploy') {
-            steps {
-                sh '''
+                sh """
                 kubectl apply -f k8s/deployment.yml
                 kubectl apply -f k8s/service.yml
-                '''
+                """
             }
         }
     }
 
     post {
         success {
-            echo "🚀 PIPELINE SUCCESS"
+            echo "🚀 PIPELINE SUCCESS - ${PROJECT_NAME}"
         }
+
         failure {
-            echo "❌ PIPELINE FAILED"
+            echo "❌ PIPELINE FAILED - ${PROJECT_NAME}"
+        }
+
+        always {
+            echo "✔ Pipeline execution completed"
         }
     }
 }
