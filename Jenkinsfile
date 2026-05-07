@@ -1,9 +1,11 @@
 pipeline {
     agent any
+      tools {
+        maven 'Maven3'
+    }
 
     environment {
         PROJECT_NAME = "terraform-devops-project"
-        GIT_REPO = "https://github.com/PoojaBusa09/terraform-devops-project.git"
         DOCKER_IMAGE = "busapooja/terraform-devops-project:latest"
 
         SONAR_PROJECT_KEY = "terraform-devops-project"
@@ -11,24 +13,14 @@ pipeline {
         SONAR_HOST_URL = "http://192.168.0.50:9000"
     }
 
-    tools {
-        maven 'Maven3'
-    }
+  
 
     stages {
 
-        stage('Checkout Code') {
+        
+        stage('Checkout') {
             steps {
-                checkout([$class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[url: "${GIT_REPO}"]],
-                    extensions: [[
-                        $class: 'CloneOption',
-                        shallow: true,
-                        depth: 1,
-                        timeout: 60
-                    ]]
-                ])
+                git branch: 'main', url: 'https://github.com/PoojaBusa09/terraform-devops-project.git'
             }
         }
 
